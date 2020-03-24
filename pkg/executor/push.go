@@ -145,6 +145,12 @@ func DoPush(image v1.Image, opts *config.KanikoOptions) error {
 	t := timing.Start("Total Push Time")
 	var digestByteArray []byte
 	var builder strings.Builder
+
+	parentDir := filepath.Dir(opts.DigestFile)
+	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
+		os.MkdirAll(parentDir, 0700)
+		logrus.Tracef("Created directory %v", parentDir)
+	}
 	if opts.DigestFile != "" || opts.ImageNameDigestFile != "" {
 		var err error
 		digestByteArray, err = getDigest(image)
