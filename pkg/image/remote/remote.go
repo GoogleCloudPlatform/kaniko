@@ -50,35 +50,35 @@ func RetrieveRemoteImage(image string, opts config.RegistryOptions, customPlatfo
 		return nil, err
 	}
 
-	if ref.Context().RegistryStr() == name.DefaultRegistry {
-		ref, err := normalizeReference(ref, image)
+	if len(opts.RegistryMirrors) > 0 && ref.Context().RegistryStr() == name.DefaultRegistry {
+		ref, err = normalizeReference(ref, image)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		for _, registryMirror := range opts.RegistryMirrors {
-			var newReg name.Registry
-			if opts.InsecurePull || opts.InsecureRegistries.Contains(registryMirror) {
-				newReg, err = name.NewRegistry(registryMirror, name.WeakValidation, name.Insecure)
-			} else {
-				newReg, err = name.NewRegistry(registryMirror, name.StrictValidation)
-			}
-			if err != nil {
-				return nil, err
-			}
-			ref := setNewRegistry(ref, newReg)
-
-			logrus.Infof("Retrieving image %s from registry mirror %s", ref, registryMirror)
-			remoteImage, err := remote.Image(ref, remoteOptions(registryMirror, opts, customPlatform)...)
-			if err != nil {
-				logrus.Warnf("Failed to retrieve image %s from registry mirror %s: %s. Will try with the next mirror, or fallback to the default registry.", ref, registryMirror, err)
-				continue
-			}
-
-			manifestCache[image] = remoteImage
-
-			return remoteImage, nil
+	for _, registryMirror := range opts.RegistryMirrors {
+		var newReg name.Registry
+		if opts.InsecurePull || opts.InsecureRegistries.Contains(registryMirror) {
+			newReg, err = name.NewRegistry(registryMirror, name.WeakValidation, name.Insecure)
+		} else {
+			newReg, err = name.NewRegistry(registryMirror, name.StrictValidation)
 		}
+		if err != nil {
+			return nil, err
+		}
+		ref := setNewRegistry(ref, newReg)
+
+		logrus.Infof("Retrieving image %s from registry mirror %s", ref, registryMirror)
+		remoteImage, err := remote.Image(ref, remoteOptions(registryMirror, opts, customPlatform)...)
+		if err != nil {
+			logrus.Warnf("Failed to retrieve image %s from registry mirror %s: %s. Will try with the next mirror, or fallback to the default registry.", ref, registryMirror, err)
+			continue
+		}
+
+		manifestCache[image] = remoteImage
+
+		return remoteImage, nil
 	}
 
 	registryName := ref.Context().RegistryStr()
