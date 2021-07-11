@@ -48,6 +48,8 @@ RUN GOARCH=$(cat /goarch) && (mkdir -p /go/src/github.com/chrismellard || true) 
 
 # Add .docker config dir
 RUN mkdir -p /kaniko/.docker
+# Create empty directory to use for HOME directory
+RUN mkdir -p /emptydir
 
 COPY . .
 RUN make GOARCH=$(cat /goarch.txt)
@@ -69,6 +71,7 @@ COPY --from=0 /go/src/github.com/chrismellard/docker-credential-acr-env/build/do
 COPY --from=certs /ca-certificates.crt /kaniko/ssl/certs/
 COPY --from=0 /kaniko/.docker /kaniko/.docker
 COPY files/nsswitch.conf /etc/nsswitch.conf
+COPY --from=0 /emptydir /root
 ENV HOME /root
 ENV USER root
 ENV PATH /usr/local/bin:/kaniko
